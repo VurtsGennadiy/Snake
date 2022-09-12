@@ -1,0 +1,585 @@
+﻿@page "/"
+@using System.Threading;
+@using Data;
+
+<link rel="stylesheet" href="css/game.css" />
+
+<h1>Snake</h1>
+
+<div class="game_state">
+    @if (gameState == GameState.pause)
+        {<h2>Пауза</h2>}
+    else if (gameState == GameState.finish)
+        {<h2>Игра завершена</h2>}
+</div>
+
+<form tabindex="0" class="main_form" @onkeydown="@keyDown" @ref="gamearea">
+
+    <div>
+        <h2>Управление:</h2>
+        <p>← → ↓ ↑ : навигация</p>
+        <p>Enter: старт игры</p>
+        <p>Space: пауза / возобновление</p>
+        <p>Escape: завершить игру</p>
+        <p>+ - : изменить скорость</p>
+    </div>
+
+    <div>
+        <table class="GameField">
+            @for (int j = 0; j < rows; j++)
+            {
+                <tr>
+                    @for (int i = 0; i < columns; i++)
+                    {                       
+                        @if (j == bodyList[0].rowPosition && i == bodyList[0].colPosition) // отрисовка головы
+                        {
+                            @switch (bodyList[0].direction)
+                            {
+                                case MoveDirection.Right:
+                                    <td><div> <img src="img/game/head.png"> </div></td>
+                                    break;
+                                case MoveDirection.Left:
+                                    <td><div> <img class="MoveDirectionLeft" src="img/game/head.png"> </div></td>
+                                    break;
+                                case MoveDirection.Down:
+                                    <td><div> <img class="MoveDirectionDown" src="img/game/head.png"> </div></td>
+                                    break;
+                                case MoveDirection.Up:
+                                    <td><div> <img class="MoveDirectionUp" src="img/game/head.png"> </div></td>
+                                    break;
+                            }
+                        } 
+                        else
+                        {
+                            if (j == bodyList[bodyList.Count - 1].rowPosition && i == bodyList[bodyList.Count - 1].colPosition) // отрисовка хвоста
+                            {
+                                switch (bodyList[bodyList.Count - 1].direction)
+                                {
+                                    case MoveDirection.Right:
+                                        <td><div> <img src="img/game/tail.png"> </div></td>
+                                        break;
+                                    case MoveDirection.Left:
+                                        <td><div> <img class="MoveDirectionLeft" src="img/game/tail.png"> </div></td>
+                                        break;
+                                    case MoveDirection.Down:
+                                        <td><div> <img class="MoveDirectionDown" src="img/game/tail.png"> </div></td>
+                                        break;
+                                    case MoveDirection.Up:
+                                        <td><div> <img class="MoveDirectionUp" src="img/game/tail.png"> </div></td>
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                @if (array[i, j] == 1) // отрисовка тела змеи
+                                {
+                                    for (int c = 1; c < bodyList.Count - 1; c++)
+                                    {
+                                        if (i == bodyList[c].colPosition && j == bodyList[c].rowPosition)
+                                        {
+                                            switch (bodyList[c].direction)
+                                            {
+                                                case MoveDirection.Right:
+                                                    if (bodyList[c+1].direction == MoveDirection.Down)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" style="transform: rotate(180deg)" /></div></td>
+                                                    }
+                                                    else if (bodyList[c+1].direction == MoveDirection.Up)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" style="transform: rotate(270deg)" /></div></td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td> <img src="img/game/body.png" /></td>
+                                                    }
+                                                    break;
+
+                                                case MoveDirection.Down:
+                                                    if (bodyList[c+1].direction == MoveDirection.Right)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" /></div></td>
+                                                    }
+                                                    else if (bodyList[c+1].direction == MoveDirection.Left)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" style="transform: rotate(270deg)"/></div></td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td> <img class="MoveDirectionDown" src="img/game/body.png" /></td>
+                                                    }
+                                                    break;
+
+                                                case MoveDirection.Left:
+                                                    if (bodyList[c+1].direction == MoveDirection.Down)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" style="transform: rotate(90deg)" /></div></td>
+                                                    }
+                                                    else if (bodyList[c+1].direction == MoveDirection.Up)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" /></div></td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td> <img class="MoveDirectionLeft" src="img/game/body.png" /></td>                                                       
+                                                    }
+                                                    break;
+
+                                                case MoveDirection.Up:
+                                                    if (bodyList[c + 1].direction == MoveDirection.Right)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" style="transform: rotate(90deg)" /></div></td>
+                                                    }
+                                                    else if (bodyList[c+1].direction == MoveDirection.Left)
+                                                    {
+                                                        <td><div><img src="img/game/turn.png" style="transform: rotate(180deg)" /></div></td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td> <img class="MoveDirectionUp" src="img/game/body.png" /></td>
+                                                    }
+                                                    break;
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (i == boostCol && j == boostRow) // отрисовка буст клетки
+                                    {
+                                        <td><img src="img/game/mouse.png" /></td>
+                                    }
+                                    else // отрисовка пустой клетки
+                                    {
+                                        <td class="field"></td>
+                                    }
+                                }
+                            }
+
+                        }
+
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+
+    <div class="control_panel">
+        <input type="button" value="Start Game" class="btn btn-primary" @onclick="StartGameThread" style="height:40px; display:block; margin:10px;" />
+        <input type="button" value="Pause / Play" class="btn btn-secondary" @onclick="Pause" style="height: 40px; display: block; margin: 10px;" />
+        <input type="button" value="End Game" class="btn btn-secondary" @onclick="EndGame" style="height: 40px; display: block; margin: 10px;" />
+
+        <div class="form-group row input_speed">
+            <label class="col-sm-4 col-form-label">Скорость</label>
+            <div class="col-sm-3" >
+                <input type="number" @bind-value="speed" max="10" min="1" class="form-control" />
+            </div>
+        </div>
+
+        <div class="form-group row input_result">
+            <label class="col-sm-4 col-form-label">Результат</label>
+            <div class="col-sm-3">
+                <input type="text" class="form-control" disabled value="@bodyList.Count" />
+            </div>
+        </div>
+    </div>
+
+    <div> 
+        <h2>Рекорды:</h2>
+        <table class="RecordTable">
+            @if (Record.recordErrorMessage != null)
+            {
+                <tr class="recordErrorMessage"><td>@Record.recordErrorMessage</td></tr>
+            }
+            @for (int c = 0; c < Record.recordList.Count; c++)
+            {
+                <tr>
+                    <td class="RecordNumber">@(c + 1). </td>
+                    <td>@Record.recordList[c].Name </td>
+                    <td class="RecordScore">@Record.recordList[c].Score</td>
+                </tr>
+            }
+        </table>
+    </div>
+</form>
+
+@if (showNewRecordForm)
+{
+<div class="popup" >
+    <div class="popup_body">
+        <div class="popup_content">
+            <div class="popup_title">
+                <p>Поздравляю, это новый рекорд!</p>
+            </div>
+            <div class="popup_form">
+                <form>
+                    <p>Введите ваше имя:</p>
+                    <input type="text" value="@PlayerName"  @oninput="NameInputValidation" @ref="inputNameField" maxlength="20">
+                        @if(PlayerName == "")
+                        {
+                           <input class="submit" type="submit" value="OK" @onclick="NameInput" disabled />
+                        }
+                        else {<input class="submit" type="submit" value="OK" @onclick="NameInput" />}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>   
+}
+
+<footer><p>Author: Vurts Gennadiy, 2022.</p></footer>
+
+
+@code {
+
+    List<BodyElement> bodyList; // Непосредственно сама змейка
+    BodyElement head; // элемент головы змеи (нулевой элемент)
+    Thread GameThread; // игровой поток
+
+    EventWaitHandle pauseHandle; // объект события нажития кнопки паузы
+    EventWaitHandle endHandle; // приостановка потока выполнения игры по флагу завершение
+    EventWaitHandle inputNameHandle; // приостановка потока выполнения игры для ввода имени
+
+    Random random; // объект для генерации случайных чисел
+
+    MoveDirection changeDirectionParam; // параметр функции изменения движения
+
+    enum GameState { nonstart, play, pause, finish, } // перечисление состояний игры
+    GameState gameState; // переменная состояния игры
+
+    ElementReference gamearea; // Ссылка на html элемент form с игрой
+    ElementReference inputNameField; // Ссылка на html элемент ввода имени нового рекорда
+
+    int speed; // скорость движения
+    const int columns = 10; // количество столбцов игрового поля
+    const int rows = 10; // количество строк игрового поля
+    int[,] array = new int[columns, rows]; // игровое поле
+
+    // ячейка буста (роста змеи)
+    int boostCol;
+    int boostRow;
+
+    string PlayerName = ""; // Имя игрока (для добавления в файл рекордов)
+    bool showNewRecordForm = false; // Отображение формы ввода нового рекорда
+
+    string buttonStyle = "btn btn-primary"; // стиль отображения кнопок
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!showNewRecordForm) await gamearea.FocusAsync();
+    }
+
+    protected override void OnInitialized()
+    {
+        Record.ReadFile();
+        gameState = GameState.nonstart;
+        GameThread = new Thread(new ThreadStart(PlayGame));
+        GameThread.Name = "PlayGameThread";
+        random = new Random();
+        pauseHandle = new AutoResetEvent(false);
+        endHandle = new ManualResetEvent(false);
+        inputNameHandle = new AutoResetEvent(false);
+        speed = 3;
+        SnakeInit();
+        ArrayInit();
+        BoostInit();
+    }
+
+    // Запуск потока игры
+    void StartGameThread()
+    { 
+        if (gameState == GameState.nonstart || gameState == GameState.finish)
+        {
+            SnakeInit();
+            ArrayInit();
+            endHandle.Set();
+            if (GameThread.ThreadState == ThreadState.Unstarted) GameThread.Start(); // Если игру не начинали то запускаем поток, а если начинаем новую после завершения, то поток уже запущен
+            gameState = GameState.play;                        
+        }
+    }
+
+    // Основная функция игры
+    void PlayGame()
+    {
+        while (true)
+        {           
+            InvokeAsync(() => StateHasChanged()); // отрисовка компонента Blazor 
+            Thread.Sleep(1000 / speed); // пауза
+            ChangeDirection(changeDirectionParam); // смена направления движения
+            
+            // Приостановка выполнения потока, до установления события паузы pauseHandle.Set();
+            if (gameState == GameState.pause) pauseHandle.WaitOne();
+
+            if (gameState == GameState.finish)
+            {
+                endHandle.WaitOne(); // останавливаем выполнение игры если она была завершена, до события endHandle.Set();
+                continue;
+            }
+
+            // Передвигаем каждый элемент в соответствии с его параметром direction
+            for (int c = 0; c < bodyList.Count; c++)
+            {
+                switch (bodyList[c].direction)
+                {
+                    case MoveDirection.Right:
+                        { moveRight(bodyList[c]); break; }
+                    case MoveDirection.Left:
+                        { moveLeft(bodyList[c]); break; }
+                    case MoveDirection.Up:
+                        { moveUp(bodyList[c]); break; }
+                    case MoveDirection.Down:
+                        { moveDown(bodyList[c]); break; }
+                }
+            }
+            BoostCheck();
+            if (CheckClash()) EndGame(); // проверка столкновения
+
+            // Изменям у каждого элемента свойство direction на такое же свойство предидущего элемента
+            // для неразрывного движения змеи
+            for (int c = bodyList.Count - 1; c > 0; c--)
+            {
+                bodyList[c].direction = bodyList[c - 1].direction;
+            }
+        }
+    }
+
+    // Завершение игры
+    void EndGame()
+    {
+        endHandle.Reset();
+        gameState = GameState.finish;
+        pauseHandle.Set(); // убираем паузу
+        int newrec = Record.CheckNewRecord(bodyList.Count);
+        showNewRecordForm = (newrec > -1);
+
+        if (showNewRecordForm)
+        {
+            Thread RecordThread = new Thread(NewRecord);
+            RecordThread.Name = "RecordThread";
+            RecordThread.Start();
+        }  
+    } 
+
+    // Обработка нового рекорда
+    void NewRecord()
+    {
+        Thread.Sleep(100); // задержка чтобы успела отрендериться форма ввода имени
+        if (inputNameField.Id != null) {inputNameField.FocusAsync();} // установка фокуса на поле ввода имени игрока
+        inputNameHandle.WaitOne(); // ожидание ввода
+        int newrec = Record.CheckNewRecord(bodyList.Count); // вычисление позиции для ввода нового рекорда
+        Record.AddNewRecord(PlayerName, bodyList.Count, newrec); // добавление нового рекорда
+        PlayerName = ""; // обнуление имени игрока
+    }
+
+    void NameInput()
+    {
+        inputNameHandle.Set(); // имя введено, продолжаем программу
+        showNewRecordForm = false; // закрытие формы ввода имени игрока
+    }
+
+    // Валидация введённого имени
+    void NameInputValidation(ChangeEventArgs e)
+    {
+        // убираем пробелы из введённого значечния, чтобы не нарушился файл с рекордами
+        string inputName  = e.Value.ToString();
+        string noSpace = String.Join(null, inputName.Split(" "));
+        PlayerName = noSpace;
+    }
+
+    // Инициалация змеи
+    void SnakeInit()
+    {       
+        head = new BodyElement(0, 0, MoveDirection.Right);
+        changeDirectionParam = MoveDirection.Right;
+        bodyList = new List<BodyElement>();
+        bodyList.Add(head);
+    }
+
+    // Обнуление игрового поля
+    void ArrayInit()
+    {       
+        array = new int[columns, rows]; // очищение поля
+        array[head.colPosition, head.rowPosition] = 1; // инициализация поля элементом головы змеи
+    }
+
+    // Генерация координат элемента буста
+    void BoostInit() 
+    {
+        int col = random.Next(0, columns - 1);
+        int row = random.Next(0, rows - 1);
+
+    CheckOverlay:
+        for (int c = 0; c < bodyList.Count; c++)
+        {
+            if (col == bodyList[c].colPosition && row == bodyList[c].rowPosition)
+            {
+                col = random.Next(0, columns - 1);
+                row = random.Next(0, rows - 1);
+                goto CheckOverlay;
+            }
+        }
+        boostCol = col;
+        boostRow = row;
+    }
+
+    // Проверка, что голова змеи находится на ячейке буста
+    void BoostCheck()
+    {
+        if (bodyList[0].colPosition == boostCol && bodyList[0].rowPosition == boostRow)
+        {
+            AddElement();
+            BoostInit();
+        }
+    }
+
+    // Пауза
+    void Pause()
+    {
+        if (gameState == GameState.play)
+        {
+            gameState = GameState.pause;
+            return;
+        }
+
+        if (gameState == GameState.pause)
+        {
+            gameState = GameState.play;
+            pauseHandle.Set(); // Включение потока игры
+        }
+    }
+
+    // Функция добавляет новый элемент в конец тела змейки (списка элементов), учитывая направление движения и границы поля.
+    void AddElement()
+    {
+        BodyElement lastElement = bodyList[bodyList.Count - 1];
+        BodyElement newElement = new BodyElement(0, 0, MoveDirection.Right);
+        switch (lastElement.direction)
+        {
+            case MoveDirection.Right:
+                if (lastElement.colPosition == 0) newElement = new BodyElement(columns - 1, lastElement.rowPosition, MoveDirection.Right);
+                else newElement = new BodyElement(lastElement.colPosition - 1, lastElement.rowPosition, MoveDirection.Right);
+                break;
+
+            case MoveDirection.Left:
+                if (lastElement.colPosition == columns - 1) newElement = new BodyElement(0, lastElement.rowPosition, MoveDirection.Left);
+                else newElement = new BodyElement(lastElement.colPosition + 1, lastElement.rowPosition, MoveDirection.Left);
+                break;
+
+            case MoveDirection.Up:
+                if (lastElement.rowPosition == rows - 1) newElement = new BodyElement(lastElement.colPosition, 0, MoveDirection.Up);
+                else newElement = new BodyElement(lastElement.colPosition, lastElement.rowPosition + 1, MoveDirection.Up);
+                break;
+
+            case MoveDirection.Down:
+                if (lastElement.rowPosition == 0) newElement = new BodyElement(lastElement.colPosition, rows - 1, MoveDirection.Down);
+                else newElement = new BodyElement(lastElement.colPosition, lastElement.rowPosition - 1, MoveDirection.Down);
+                break;
+        }
+        bodyList.Add(newElement);
+        array[newElement.colPosition, newElement.rowPosition] = 1;
+    }
+
+    // Проверка произошло ли столкновение головы змеи с её любым другим элементом
+    bool CheckClash() 
+    {
+        for (int c = 1; c < bodyList.Count; c++)
+        {
+            if (bodyList[c].colPosition == bodyList[0].colPosition && bodyList[c].rowPosition == bodyList[0].rowPosition) return true;
+        }
+        return false;
+    }
+
+    // Обработка нажатий клавиатуры
+    void keyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" & !showNewRecordForm & (gameState == GameState.nonstart || gameState == GameState.finish)) StartGameThread();
+        if (e.Key == " ") Pause();
+        if (e.Key == "Escape" & (gameState == GameState.play | gameState == GameState.pause)) EndGame();
+
+        if (e.Key == "ArrowRight" && gameState == GameState.play)
+        {
+            if (bodyList[0].direction == MoveDirection.Up || bodyList[0].direction == MoveDirection.Down)
+                changeDirectionParam = MoveDirection.Right;
+        }
+
+        if (e.Key == "ArrowLeft" && gameState == GameState.play)
+        {
+            if (bodyList[0].direction == MoveDirection.Up || bodyList[0].direction == MoveDirection.Down)
+                changeDirectionParam = MoveDirection.Left;
+        }
+
+        if (e.Key == "ArrowUp" && gameState == GameState.play)
+        {
+            if (bodyList[0].direction == MoveDirection.Left || bodyList[0].direction == MoveDirection.Right)
+                changeDirectionParam = MoveDirection.Up;
+        }
+
+        if (e.Key == "ArrowDown" && gameState == GameState.play)
+        {
+            if (bodyList[0].direction == MoveDirection.Left || bodyList[0].direction == MoveDirection.Right)
+                changeDirectionParam = MoveDirection.Down;
+        }
+
+        if (e.Key == "+" && speed < 10) speed++;
+        if (e.Key == "-" && speed != 1) speed--;
+    }
+
+    // Смена направления движения змейки
+    void ChangeDirection (MoveDirection direction)
+    {
+        switch (direction)
+        {
+            case MoveDirection.Right:
+                bodyList[0].direction = MoveDirection.Right;
+                break;
+
+            case MoveDirection.Left:
+                bodyList[0].direction = MoveDirection.Left;
+                break;
+
+            case MoveDirection.Up:
+                bodyList[0].direction = MoveDirection.Up;
+                break;
+
+            case MoveDirection.Down:
+                bodyList[0].direction = MoveDirection.Down;
+                break;
+        }
+    }
+
+    // Движение элемента змейки вправо
+    void moveRight(BodyElement element)
+    {
+        array[element.colPosition, element.rowPosition] = 0; // очищение клетки поля
+        if (element.colPosition == columns - 1) element.colPosition = 0; // проверка на нахождение на правом краю поля
+        else element.colPosition++;
+        array[element.colPosition, element.rowPosition] = 1; // обновление клетки поля
+    }
+
+    // Движение элемента змейки влево
+    public void moveLeft(BodyElement element)
+    {
+        array[element.colPosition, element.rowPosition] = 0; // очищение клетки поля
+        if (element.colPosition == 0) element.colPosition = columns - 1; // проверка на нахождение на левом краю поля
+        else element.colPosition--;
+        array[element.colPosition, element.rowPosition] = 1; // обновление клетки поля
+    }
+
+    // Движение элемента змейки вверх
+    public void moveUp(BodyElement element)
+    {
+        array[element.colPosition, element.rowPosition] = 0; // очищение клетки поля
+        if (element.rowPosition == 0) element.rowPosition = rows - 1; // проверка на нахождение на верхнем краю поля
+        else element.rowPosition--;
+        array[element.colPosition, element.rowPosition] = 1; // обновление клетки поля
+    }
+
+    // Движение элемента змейки вниз
+    public void moveDown(BodyElement element)
+    {
+        array[element.colPosition, element.rowPosition] = 0; // очищение клетки поля
+        if (element.rowPosition == rows - 1) element.rowPosition = 0; // проверка на нахождение на нижнем краю поля
+        else element.rowPosition++;
+        array[element.colPosition, element.rowPosition] = 1; // обновление клетки поля
+    }
+}
